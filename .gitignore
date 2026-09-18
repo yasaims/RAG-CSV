@@ -1,0 +1,24 @@
+.DS_Store
+.env
+.venv
+.vscode/
+.claude/tmp
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.ruff_cache/
+.pytest_cache/
+.import_linter_cache/
+
+# CSV から再構築可能な DuckDB キャッシュ・監査ログ（ADR 003）
+var/
+
+# 開発者個人の参考用ベースライン（ADR 007）。"local" は全開発者のマシンを
+# 1 つに畳むため、共有しても比較の基準として意味を持たない。合否ゲートに
+# 使うのは CI（github-actions）のベースラインのみ。
+evals/baseline/*.local.json

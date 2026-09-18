@@ -1,0 +1,65 @@
+# 相対日付の解釈を検証するデータセット（ADR 007）。
+#
+# 固定日付は書かない。`relative_arguments` のトークン（例: this_year_start）を
+# 評価基準日から解決し、`expected_arguments` と合成して期待件数を導出する
+# （evals/schema.py の `resolve_relative_date`）。評価基準日はコーパス最終日に
+# 固定する（`evals/run.py` の `_run_llm_suite`。`temperature=0`/`seed=0` と同じ
+# 「制御変数の固定」）。
+#
+# `SYSTEM_PROMPT`（core/prompts.py）は現在日付をシステムプロンプトへ注入するが、
+# 「今年」「去年」等の相対表現が絶対日付へ正しく変換されるかは LLM の解釈に
+# 委ねられる（issue #22-1）。年がずれると実際には該当件数があるのに 0 件と
+# 誤答する「偽ゼロ」が起こりうる（`_unmatched_axes` は日付軸を検知対象に
+# していないため、この経路は実装上塞がれていない）。このカテゴリは絶対要件3
+# （偽ゼロの禁止）の主な検証対象。
+- id: temporal-01
+  category: temporal
+  question: 今年の重大事故は何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    severity: 重大
+  relative_arguments:
+    date_from: this_year_start
+    date_to: this_year_end
+  rationale: >-
+    評価基準日はコーパス最終日（収録期間は2023-02〜2025-12）なので「今年」は
+    非0件になる。絶対要件2（件数不一致）・3（偽ゼロ）はどちらも実行時に
+    導出した期待件数との整合性で判定する。
+
+- id: temporal-02
+  category: temporal
+  question: 去年の重大事故は何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    severity: 重大
+  relative_arguments:
+    date_from: last_year_start
+    date_to: last_year_end
+  rationale: >-
+    「今年」に対する1年前の対照ケース。評価基準日固定のもとでも非0件の
+    期待値になる（去年=2024年の重大事故）。件数だけの照合では条件そのものの
+    取り違えを見逃しうるため（temporal カテゴリの実測で確認）、citations
+    （母集団の全 id）を実データと直接突合する絶対要件Cで検証する。
+
+# 評価基準日をコーパス最終日に固定する運用（evals/run.py）では、temporal-01/02 の
+# 「今年」「去年」は原則コーパス内（真に収録期間外にはならない）。収録期間外の
+# 縮退（out_of_coverage、ADR 009）を継続的に検証するケースをここで別に持つ。
+- id: temporal-03
+  category: temporal
+  question: 来年の重大事故は何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    severity: 重大
+  relative_arguments:
+    date_from: next_year_start
+    date_to: next_year_end
+  expected_degraded_reason: out_of_coverage
+  rationale: >-
+    評価基準日をコーパス最終日に固定すると「今年」「去年」は本 PR 以降ほぼ
+    確実にコーパス内に収まり、収録期間外の縮退経路（out_of_coverage）を検証する
+    ケースが評価から失われる。「来年」（next_year_start〜next_year_end）は
+    評価基準日の決め方に関わらず常に収録期間外になるため、この経路の
+    カバレッジを維持する。期待件数は常に0件であり、絶対要件B（答える義務）の
+    対象外だが、モデルが実際に縮退（degraded_reason=out_of_coverage）した
+    ことは `expected_degraded_reason` で直接検証する（temporal-01 が実測した
+    「空回り＝恒真ゲート」を再発させないため）。

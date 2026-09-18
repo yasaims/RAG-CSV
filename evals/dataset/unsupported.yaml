@@ -1,0 +1,42 @@
+# 対応外の集計軸・集計種別の評価データセット（ADR 006 / 007）。
+#
+# 旧データセット（未マージの feat/answer-evaluation ブランチ由来）は
+# worker_role・experience・時間帯（hour_from/hour_to）を「対応外」としていたが、
+# これらは issue #7 実装フェーズ以降にすべて絞り込み軸として対応済みになっている
+# （src/safety_qa/core/filters.py）。現在対応済みの軸を「対応外」として期待すると、
+# 対応できるようになったことが CI 失敗として検出されてしまうため、現行の
+# `VALID_GROUP_BY`（core/aggregation.py）・ツール説明文（core/tools.py）に
+# 実在しない軸・集計種別のみを対象に作り直した。
+#
+# `unsupported_group_by` を指定したケースは、実行時に `VALID_GROUP_BY` の外で
+# あることを検証する（evals/schema.py）。軸が対応済みになったらデータセット側が
+# 先に落ちる。集計種別（平均・相関等）はツールの引数として表現できないため
+# 機械的な照合対象がなく、ルーティング結果（ツール未呼び出し）でのみ検証する。
+- id: unsupported-01
+  category: unsupported
+  question: 作業員の経験年数と事故件数の相関・平均を教えてください
+  expected_tool: null
+  rationale: >-
+    `aggregate_accident_records` は件数の集計のみに対応し、平均・相関等の
+    算出はできない（core/tools.py のツール説明文）。この制約は引数の軸を
+    増やしても解消しないため、`unsupported_group_by` による照合対象にしない。
+
+- id: unsupported-02
+  category: unsupported
+  question: 事故の原因（cause）別の件数の内訳を教えてください
+  expected_tool: null
+  unsupported_group_by: cause
+  rationale: >-
+    `cause` は自由記述列であり `VALID_GROUP_BY`（equipment/location/severity/
+    shift/worker_role/month/year）に含まれない。原因ごとの傾向は
+    search_accident_records の記述検索で個別に確認する運用を想定する。
+
+- id: unsupported-03
+  category: unsupported
+  question: 1時間刻みの時間帯別で事故件数の内訳を教えてください
+  expected_tool: null
+  unsupported_group_by: hour
+  rationale: >-
+    絞り込み軸としては hour_from/hour_to（任意の時間帯での filtering）に
+    対応しているが、内訳（group_by）としての時間帯粒度は shift
+    （日勤/夜勤の2区分）のみで、1時間刻みの内訳は `VALID_GROUP_BY` にない。

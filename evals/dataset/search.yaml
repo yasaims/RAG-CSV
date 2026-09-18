@@ -1,0 +1,64 @@
+# 記述検索の評価データセット（ADR 007）。
+#
+# must_hit_ids は「top_n に必ず含まれるべき最小集合」であり、関連しうる全件の
+# 網羅ラベリングではない。恣意性を避けるため、各ケースで除外した類似事例も
+# rationale に明記する。id・rationale は AI/data/accidents.csv を実際に読んで
+# 検証済み（issue #8）。
+- id: search-01
+  category: search
+  question: プレス機で指を挟んだ事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-001, ACC-2025-001]
+  rationale: >-
+    「指が金型部/可動部に挟まれた」と明記された実受傷事例はこの2件のみ。
+    ACC-2024-001 は台座との間に指先を挟んだ別態様、ACC-2023-010 / ACC-2024-011 /
+    ACC-2025-011 / ACC-2025-012 は負傷のないヒヤリハットのため必須集合から除外した。
+
+- id: search-02
+  category: search
+  question: フォークリフトが歩行者とぶつかりそうになった事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-002, ACC-2024-002]
+  rationale: >-
+    「歩いてきた/急いで歩いてきた作業員とぶつかりそうになった」という表現に
+    最も直接一致する2件。ACC-2023-007 は「棚の陰から出てきた」で状況が異なり、
+    ACC-2025-005 は同一箇所での実際の接触事故（ニアミスではない）、
+    ACC-2025-010 は対象が壁であり歩行者ではないため必須集合から除外した。
+
+- id: search-03
+  category: search
+  question: 溶接作業で紫外線により目を痛めた事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-005, ACC-2024-006]
+  rationale: >-
+    「紫外線性眼炎症」と病名まで一致する2件。ACC-2025-004 は「紫外線性角膜炎」で
+    類似だが病名表記が異なるため必須集合には含めない（見つかれば加点だが必須ではない）。
+
+- id: search-04
+  category: search
+  question: 旋盤のスピンドルが完全に止まっていないのに部品を取り出そうとして怪我をした事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-003, ACC-2023-015, ACC-2025-002]
+  rationale: >-
+    「スピンドルが完全停止/回転が残っている状態で部品を取り出し」実際に負傷した事例。
+    ACC-2024-007 は接触寸前で怪我なし、ACC-2024-016 は工具の弾かれによる受傷で
+    態様が異なるため除外した。
+
+- id: search-05
+  category: search
+  question: グラインダーの砥石が割れた・破損した事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-013, ACC-2024-017]
+  rationale: >-
+    「砥石が割れた/破損した」と明記された2件。ACC-2024-005 は砥石が素材に食い込んだ
+    反動による受傷で、砥石自体の破損ではないため除外した。
+
+- id: search-06
+  category: search
+  question: コンベアのローラー部に袖や裾が巻き込まれそうになった事例を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-004, ACC-2025-016]
+  rationale: >-
+    「袖口/袖がローラー部に引っかかりそう/接触しそうになった」と最も直接一致する2件。
+    ACC-2023-014（裾がベルトに巻き込まれそう）・ACC-2024-014（裾がローラー部に触れていた）も
+    同系統の事例だが、表現の一致度が一段落ちるため必須集合には含めない。

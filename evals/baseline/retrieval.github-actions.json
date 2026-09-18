@@ -1,0 +1,16 @@
+{
+  "measured_at": "2026-09-10T13:43:51+00:00",
+  "commit": "ad30fe5",
+  "conditions": {
+    "model": "cl-nagoya/ruri-v3-130m",
+    "runner": "github-actions",
+    "corpus_version": "d28eeb25a1ae",
+    "dataset_version": "840b83f6fc8c",
+    "top_n": 5,
+    "repeat": null,
+    "evaluation_date": null
+  },
+  "metrics": {
+    "mean_recall_at_k": 0.8166666666666667
+  }
+}

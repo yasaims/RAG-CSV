@@ -1,0 +1,133 @@
+[project]
+name = "safety-qa"
+version = "0.1.0"
+description = "工場安全管理Q&Aアシスタント"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141",
+    "uvicorn[standard]>=0.52",
+    "pydantic>=2.13",
+    "pydantic-settings>=2.7",
+    "uuid6>=2025.0",
+    "anyio>=4.6",
+    "duckdb>=1.1",
+    "sentence-transformers>=3.3",
+    "torch>=2.5",
+    "numpy>=1.26",
+    "bm25s>=0.2.6",
+    "fugashi>=1.4",
+    "unidic-lite>=1.0.8",
+    "ollama>=0.4",
+    "structlog>=25.4",
+    # issue #22-1: 相対日付の解釈基準（SAFETY_QA_BUSINESS_TIMEZONE）に zoneinfo を
+    # 使う。OS 側の IANA tz database に依存しない（Windows・一部の軽量コンテナには
+    # 標準搭載されていない）ため、Python 公式ドキュメントの推奨に従い明示的に依存する。
+    "tzdata>=2025.2",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0",
+    "ruff>=0.16.6",
+    "pytest>=9.1",
+    "httpx>=0.28",
+    "import-linter>=2.15",
+    "pyyaml>=6.0",
+    "poethepoet>=0.32",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/safety_qa"]
+
+# torch は既定だと Linux で CUDA 版が解決される（cuda-bindings 等を巻き込み数 GB になる）。
+# GPU なし前提（SPEC.md）のため CPU ホイールを明示的に固定する。
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 既定で integration を除外する。実行するには `uv run pytest -m integration`
+# （コマンドラインの -m は addopts を上書きするため、この既定値と衝突しない）。
+addopts = "-m 'not integration'"
+markers = [
+    "integration: 実 Ollama / 埋め込みモデルを必要とする疎通テスト（既定で除外）",
+]
+
+[tool.importlinter]
+root_packages = ["safety_qa", "evals"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "スキーマ → インフラ → バックエンドの一方向"
+type = "layers"
+layers = ["safety_qa.api", "safety_qa.infra", "safety_qa.core"]
+
+[[tool.importlinter.contracts]]
+name = "バックエンドレイヤーは HTTP / Web フレームワークや特定の外部実装に依存しない"
+type = "forbidden"
+source_modules = ["safety_qa.core"]
+forbidden_modules = [
+    "fastapi",
+    "starlette",
+    "uvicorn",
+    "duckdb",
+    "sentence_transformers",
+    "bm25s",
+    "fugashi",
+    "ollama",
+    "torch",
+    "structlog",
+]
+
+# evals（評価ハーネス、ADR 007）は safety_qa の消費者（infra の合成関数・core の
+# 型を使う）。配布物には含めない開発ツールであり、依存の向きは常に
+# evals -> safety_qa のみを許す（逆向きの依存が紛れ込むと、評価専用のコードが
+# 本番の実行パスに漏れ出す）。
+[[tool.importlinter.contracts]]
+name = "safety_qa は evals に依存しない"
+type = "forbidden"
+source_modules = ["safety_qa"]
+forbidden_modules = ["evals"]
+
+[tool.poe.tasks]
+# 開発中によく叩くコマンドの短縮（`uv run poe` で一覧・ヘルプを表示）。
+# CI（.github/workflows）・pre-commit は実行内容を明示するため、あえてここには
+# 寄せず生の `uv run ...` のままにしている。
+hooks = { cmd = "pre-commit install", help = "コミット前フックを有効化（初回のみ）" }
+check = { cmd = "pre-commit run --all-files", help = "lint/format/openapi 再生成/import-linter を一括実行" }
+etl = { cmd = "python -m safety_qa.infra", help = "ETL のみ単体実行" }
+serve = { cmd = "uvicorn safety_qa.api.app:app --reload", help = "API サーバーを起動" }
+ask = { cmd = "python scripts/ask.py", help = "動作確認 CLI（引数省略で対話モード）" }
+test = { cmd = "pytest", help = "ユニットテスト（Ollama 不要）" }
+test-integration = { cmd = "pytest -m integration", help = "実 Ollama を使う疎通テスト" }
+eval = { cmd = "python -m evals.run", help = "回答品質評価（例: uv run poe eval retrieval）" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# 行長は formatter が唯一の権威。formatter が折れない長い文字列・URL・
+# コメントで E501 が発火すると「format しても CI が通らない」状態になるため無効化する。
+ignore = ["E501"]
+# NOTE: 以下は formatter と衝突するため select しないこと（ruff 公式の formatter 互換性ガイド）:
+#   W191, E101, E111-E117, D206, D300, Q000-Q003, COM812, COM819, ISC001, ISC002
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+# 改行コードを LF に固定。Windows(core.autocrlf=true) と CI(ubuntu) の差異を消す。
+line-ending = "lf"

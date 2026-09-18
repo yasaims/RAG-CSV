@@ -1,0 +1,63 @@
+# 集計系の評価データセット（ADR 007）。
+#
+# 期待件数はここに書かない。`expected_arguments` を
+# `AccidentRecordRepository.aggregate()` にそのまま渡して実行時に導出し、
+# 回答文中の件数と照合する（evals/run.py）。CSV の行数・内容が変わっても
+# データセット自体は書き換え不要。
+- id: aggregate-01
+  category: aggregate
+  question: 重大事故は何件ありますか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    severity: 重大
+  rationale: severity 単独の絞り込み。既存の end-to-end 疎通テストと同じ質問文で継続性を持たせる。
+
+- id: aggregate-02
+  category: aggregate
+  question: 2024年に発生したフォークリフトの事故は何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    date_from: "2024-01-01"
+    date_to: "2024-12-31"
+    equipment: フォークリフト
+  rationale: 日付範囲 + equipment の複合条件。
+
+- id: aggregate-03
+  category: aggregate
+  question: 第2製造棟 機械加工エリアで起きたヒヤリハットは何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    location: 第2製造棟 機械加工エリア
+    severity: ヒヤリハット
+  rationale: >-
+    location（部分一致）+ severity の複合条件。issue #16
+    （複合地名の location/equipment 誤分割）の回帰検知を兼ねる。
+
+- id: aggregate-04
+  category: aggregate
+  question: 夜勤帯の重大事故は何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    shift: 夜勤
+    severity: 重大
+  rationale: >-
+    shift はプロトタイプ検証（D-3）でツール選択安定化のために追加された引数。
+    この引数が実際に機能しているかを検証する。
+
+- id: aggregate-05
+  category: aggregate
+  question: 溶接機に関する事故は全部で何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    equipment: 溶接機
+  rationale: equipment 単独の絞り込み。
+
+- id: aggregate-06
+  category: aggregate
+  question: 2025年のヒヤリハットは何件ですか
+  expected_tool: aggregate_accident_records
+  expected_arguments:
+    date_from: "2025-01-01"
+    date_to: "2025-12-31"
+    severity: ヒヤリハット
+  rationale: 日付範囲 + severity の複合条件。

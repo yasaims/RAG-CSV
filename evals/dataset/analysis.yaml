@@ -1,0 +1,46 @@
+# 「傾向」「なぜ」等の分析系質問（ADR 007 / issue #7 実装フェーズからの申し送り）。
+#
+# プロトタイプ検証で、この種の質問に対しツールを一切呼ばずに根拠のない数値を
+# 提示する事例が観測された（docs/stack-feasibility-report.md D 節）。
+# search_accident_records へのルーティングと、検索結果に基づく検証可能な範囲での
+# 回答（＝捏造なし）の両方を検証する。
+- id: analysis-01
+  category: analysis
+  question: 夜勤帯の旋盤作業員の事故にはどんな傾向がありますか
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-003, ACC-2025-002]
+  rationale: >-
+    夜勤帯・旋盤・重大に該当する事故はこの2件。いずれもスピンドルの回転が
+    残った状態での接触により指を損傷しており、傾向分析の根拠として必須。
+
+- id: analysis-02
+  category: analysis
+  question: なぜプレス機の事故が多いのですか
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-001, ACC-2025-001]
+  rationale: >-
+    core/prompts.py の SYSTEM_PROMPT に search_accident_records への
+    ルーティング例として明記されている質問そのもの。ACC-2025-001 の記録には
+    「2023年の同種事故後に作成されたチェックリストだが形骸化していた」と
+    ACC-2023-001 との直接的な連関が明記されており、再発傾向の根拠として必須。
+
+- id: analysis-03
+  category: analysis
+  question: 高所作業車での作業中にバランスを崩して転落しそうになった事例の傾向を教えて
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2023-009, ACC-2025-007]
+  rationale: >-
+    高所作業車の昇降台上でバランスを崩した事例はこの2件（ACC-2024-012 は
+    配管への接触寸前で「バランスを崩した」に該当しないため除外）。
+    ACC-2025-007 は実際に転落・重傷に至っており、傾向として必須。
+
+- id: analysis-04
+  category: analysis
+  question: フォークリフトのヒヤリハットは同じ場所で繰り返し発生していませんか
+  expected_tool: search_accident_records
+  must_hit_ids: [ACC-2024-002, ACC-2025-005]
+  rationale: >-
+    いずれも記録本文中に「2023年に同じ場所で同様の出来事があり」
+    「2023年・2024年と同一の曲がり角で2年連続」と過去の同一箇所での
+    発生を明記しており、再発傾向の根拠として必須（起点の ACC-2023-002 は
+    過去参照の記述がないため必須集合には含めない）。
